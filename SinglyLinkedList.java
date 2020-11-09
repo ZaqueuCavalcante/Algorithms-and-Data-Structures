@@ -1,24 +1,21 @@
 package com.zaqueu.lists;
 
-public class DoublyLinkedList<T> implements Iterable<T> {
+public class SinglyLinkedList<T> {
     private int size = 0;
     private Node<T> head = null;
-    private Node<T> tail = null;
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
     private static class Node<T> {
         private T data;
-        private Node<T> previous, next;
+        private Node<T> next;
 
-        public Node(T data, Node<T> previous, Node<T> next) {
+        public Node(T data, Node<T> next) {
             this.data = data;
-            this.previous = previous;
             this.next = next;
         }
 
         public void clear() {
             data = null;
-            previous = null;
             next = null;
         }
 
@@ -34,46 +31,36 @@ public class DoublyLinkedList<T> implements Iterable<T> {
     }
 
     public boolean isEmpty() {
-        return size() == 0;
+        return size == 0;
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
     public void addFirst(T data) { // O(1)
         if (isEmpty()) {
-            head = tail = new Node<>(data, null, null);
+            head = new Node<>(data, null);
         } else {
-            head.previous = new Node<>(data, null, head);
-            head = head.previous;
+            Node<T> newHead = new Node<>(data, head);
+            head = newHead;
         }
         size++;
     }
 
-    public void addLast(T data) { // O(1)
-        if (isEmpty()) {
-            head = tail = new Node<>(data, null, null);
-        } else {
-            tail.next = new Node<>(data, tail, null);
-            tail = tail.next;
-        }
+    public void addAfter(Node<T> previousNode, T data) { // O(1)
+        Node<T> newNode = new Node<>(data, previousNode.next);
+        previousNode.next = newNode;
         size++;
     }
 
-    public void addAt(int index, T data) { // O(n)
-        if (index < 0 || index > size) {
-            throw new IllegalArgumentException("Index out of range.");
-        }
-        if (index == 0) {
-            addFirst(data);
+    public void append(T data) { // O(n)
+        if (head == null) {
+            head = new Node<>(data, null);
             return;
         }
-        if (index == size) {
-            addLast(data);
-            return;
+        Node<T> current = head;
+        while (current.next != null) {
+            current = current.next;
         }
-        Node<T> leftNode = getNodeAt(index - 1);
-        Node<T> rightNode = leftNode.next;
-        Node<T> newNode = new Node<>(data, leftNode, rightNode);
-        leftNode.next = rightNode.previous = newNode;
+        current.next = new Node<>(data, null);
         size++;
     }
 
@@ -86,17 +73,9 @@ public class DoublyLinkedList<T> implements Iterable<T> {
 
     private Node<T> getNodeAt(int index) { // O(n)
         checkIndexOutOfRangeException(index);
-        Node<T> current;
-        if (index < size / 2) {
-            current = head;
-            for (int i = 0; i != index; i++) {
-                current = current.next;
-            }
-        } else {
-            current = tail;
-            for (int i = size - 1; i != index; i--) {
-                current = current.previous;
-            }
+        Node<T> current = head;
+        for (int i = 0; i != index; i++) {
+            current = current.next;
         }
         return current;
     }
@@ -134,11 +113,6 @@ public class DoublyLinkedList<T> implements Iterable<T> {
         return head.data;
     }
 
-    public T tailData() { // O(1)
-        checkEmptyListException();
-        return tail.data;
-    }
-
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
     public T removeFirst() { // O(1)
         checkEmptyListException();
@@ -147,34 +121,11 @@ public class DoublyLinkedList<T> implements Iterable<T> {
         head = head.next;
         --size;
 
-        if (isEmpty()) tail = null;
-        else head.previous = null;
-
-        return data;
-    }
-
-    public T removeLast() { // O(1)
-        checkEmptyListException();
-
-        T data = tail.data;
-        tail = tail.previous;
-        --size;
-
-        if (isEmpty()) head = null;
-        else tail.next = null;
-
         return data;
     }
 
     private T remove(Node<T> node) { // O(1)
-        Node<T> leftNode = node.previous;
         Node<T> rightNode = node.next;
-
-        if (leftNode == null) return removeFirst();
-        if (rightNode == null) return removeLast();
-
-        leftNode.next = rightNode;
-        rightNode.previous = leftNode;
 
         T data = node.data;
         node.clear();
@@ -205,45 +156,21 @@ public class DoublyLinkedList<T> implements Iterable<T> {
             current.clear();
             current = next;
         }
-        head = tail = null;
+        head = null;
         size = 0;
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
-    @Override
-    public java.util.Iterator<T> iterator() {
-        return new java.util.Iterator<>() {
-            private Node<T> current = head;
-
-            @Override
-            public boolean hasNext() {
-                return current != null;
-            }
-
-            @Override
-            public T next() {
-                T data = current.data;
-                current = current.next;
-                return data;
-            }
-
-            @Override
-            public void remove() {
-                throw new UnsupportedOperationException();
-            }
-        };
-    }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("[ ");
-        if (!isEmpty()) sb.append("null <- ");
         Node<T> current = head;
         while (current != null) {
             sb.append(current.data);
             if (current.next != null) {
-                sb.append(" <-> ");
+                sb.append(" -> ");
             }
             current = current.next;
         }
